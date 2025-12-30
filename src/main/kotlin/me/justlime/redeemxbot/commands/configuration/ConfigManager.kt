@@ -10,6 +10,8 @@ import java.io.File
 class ConfigManager {
     lateinit var configuration: FileConfiguration
     lateinit var messages: FileConfiguration
+    lateinit var payments: FileConfiguration
+
 
     init {
         loadMessageConfig()
@@ -26,6 +28,8 @@ class ConfigManager {
         }
         config.save(file)
         this.messages = config
+        this.payments = YamlConfiguration.loadConfiguration(getFile(JFiles.PAYMENTS.fileName))
+
     }
 
     private fun getFile(jFiles: String): File {

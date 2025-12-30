@@ -1,6 +1,6 @@
 package me.justlime.redeemxbot.commands.redeemcode
 
-import api.justlime.redeemcodex.RedeemXAPI
+import api.justlime.redeemcodex.RedeemX
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.Command
@@ -61,14 +61,14 @@ class RCXModifyCommand {
         val maxChoices = 25 // Discord's limit for choices
         return when (focusedOption) {
             "code" -> {
-                val availableCodes = RedeemXAPI.code.getCodes()
+                val availableCodes = RedeemX.redeemCodeDao.getCachedCodes()
                 availableCodes.filter { it.lowercase().contains(query) } // Filter based on the query
                     .take(maxChoices) // Limit to 25 results
                     .map { Command.Choice(it, it) } // Map to Command.Choice
             }
 
             "template" -> {
-                val availableTemplates = RedeemXAPI.template.getTemplates()
+                val availableTemplates = RedeemX.redeemTemplateDao.getTemplates()
                 availableTemplates.filter { it.lowercase().contains(query) } // Filter based on the query
                     .take(maxChoices) // Limit to 25 results
                     .map { Command.Choice(it, it) } // Map to Command.Choice

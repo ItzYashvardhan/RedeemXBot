@@ -28,27 +28,33 @@ class RedeemXBot : JavaPlugin() {
         // Check if the bot is enabled
         if (!config.getBoolean("bot.enabled")) {
             logger.warning("Bot is disabled in the config.yml. Disabling plugin.")
-            return disablePlugin()
+            return server.pluginManager.disablePlugin(this)
         }
 
         // Retrieve bot token and guilds
         val token = config.getString("bot.token")?.takeIf { it.isNotEmpty() }
         val guilds = config.getStringList("guilds").takeIf { it.isNotEmpty() }
         val roles = config.getStringList("roles").takeIf { it.isNotEmpty() }
+        val channels = config.getStringList("channels").takeIf { it.isNotEmpty() }
 
         if (token == null) {
             logger.severe("Bot token is missing in the config.yml. Disabling plugin.")
-            return disablePlugin()
+            return server.pluginManager.disablePlugin(this)
         }
 
         if (guilds == null) {
             logger.severe("Guilds are missing in the config.yml. Disabling plugin.")
-            return disablePlugin()
+            return server.pluginManager.disablePlugin(this)
         }
 
         if (roles == null) {
             logger.severe("Roles are missing in the config.yml. Disabling plugin.")
-            return disablePlugin()
+            return server.pluginManager.disablePlugin(this)
+        }
+
+        if (channels == null) {
+            logger.severe("Channels are missing in the config.yml. Disabling plugin.")
+            return server.pluginManager.disablePlugin(this)
         }
 
         // Initialize JDA
@@ -67,7 +73,7 @@ class RedeemXBot : JavaPlugin() {
             logger.info("Bot connected successfully.")
 
             // Initialize commands and register listeners
-            val commandManager = CommandManager(jda, guilds, roles)
+            val commandManager = CommandManager(jda, guilds, roles, channels)
             commandManager.initializeCommands()
 
             jda.addEventListener(commandManager)
@@ -76,13 +82,20 @@ class RedeemXBot : JavaPlugin() {
         } catch (exception: Exception) {
             logger.severe("Failed to initialize the Discord bot: ${exception.message}")
             exception.printStackTrace()
-            return disablePlugin()
+            return server.pluginManager.disablePlugin(this)
         }
     }
 
     override fun onDisable() {
         if (::jda.isInitialized) {
-            BotManager.shutdownBot()
+            val client = jda.httpClient
+            client.connectionPool.evictAll()
+            client.dispatcher.executorService.shutdown()
+            jda.shutdownNow()
+            if (!jda.awaitShutdown(Duration.ofSeconds(3))) {
+                jda.shutdownNow(); // Cancel request queue
+                jda.awaitShutdown(); // Wait until shutdown is complete (indefinitely)
+            }
             logger.info("Bot has been shut down.")
         }
     }
@@ -92,16 +105,5 @@ class RedeemXBot : JavaPlugin() {
             dataFolder.mkdirs()
         }
         saveDefaultConfig()
-    }
-
-    private fun disablePlugin() {
-        val client = jda.httpClient
-        client.connectionPool.evictAll()
-        client.dispatcher.executorService.shutdown()
-        jda.shutdownNow()
-        if (!jda.awaitShutdown(Duration.ofSeconds(3))) {
-            jda.shutdownNow(); // Cancel request queue
-            jda.awaitShutdown(); // Wait until shutdown is complete (indefinitely)
-        }
     }
 }

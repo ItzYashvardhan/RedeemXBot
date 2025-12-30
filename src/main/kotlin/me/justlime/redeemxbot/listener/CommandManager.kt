@@ -1,8 +1,8 @@
 package me.justlime.redeemxbot.listener
 
 import me.justlime.redeemxbot.commands.JRedeemCode
+import me.justlime.redeemxbot.commands.redeemcode.RCXCreateCommand
 import me.justlime.redeemxbot.commands.redeemcode.RCXDeleteCommand
-import me.justlime.redeemxbot.commands.redeemcode.RCXGenCommand
 import me.justlime.redeemxbot.commands.redeemcode.RCXUsageCommand
 import me.justlime.redeemxbot.rxbPlugin
 import net.dv8tion.jda.api.JDA
@@ -13,17 +13,18 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter
 class CommandManager(
     private val jda: JDA,
     private val guilds: List<String>,
-    private val roles: List<String>
+    private val roles: List<String>,
+    private val channels: List<String>
 ) : ListenerAdapter() {
 
     private val commands = mutableMapOf<String, JRedeemCode>()
 
     fun initializeCommands() {
         val commands = listOf(
-            RCXGenCommand(),
+            RCXCreateCommand(),
             RCXDeleteCommand(),
 //            RCXModifyCommand(),
-            RCXUsageCommand()
+            RCXUsageCommand(),
         )
         jda.awaitReady()
         register(*commands.toTypedArray())
@@ -72,6 +73,11 @@ class CommandManager(
             return
         }
 
+        if (event.channel.id !in channels) {
+            event.reply("You can't use this command in this channel.").setEphemeral(true).queue()
+            return
+        }
+
         commands[event.name]?.execute(event)
             ?: event.reply("Unknown command!").setEphemeral(true).queue()
     }
@@ -86,6 +92,8 @@ class CommandManager(
             event.guild?.leave()?.queue()
             return
         }
+
+        if (event.channel.id !in channels) return
 
         val member = event.member ?: return
         if (!member.roles.any { it.id in roles }) return

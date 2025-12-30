@@ -1,6 +1,7 @@
 package me.justlime.redeemxbot.commands.redeemcode
 
-import api.justlime.redeemcodex.RedeemXAPI
+import api.justlime.redeemcodex.RedeemX
+import me.justlime.redeemxbot.adapter.DiscordRCXSender
 import me.justlime.redeemxbot.commands.JRedeemCode
 import me.justlime.redeemxbot.enums.JMessages
 import me.justlime.redeemxbot.utils.JServices
@@ -13,7 +14,7 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 
-class RCXGenCommand : JRedeemCode {
+class RCXCreateCommand : JRedeemCode {
 
     companion object {
         private const val MAX_DIGITS: Long = 25
@@ -55,48 +56,38 @@ class RCXGenCommand : JRedeemCode {
 
     override fun execute(event: SlashCommandInteractionEvent) {
         val digit = event.getOption(JServices.getMessage(JMessages.GENERATE_DIGIT_COMPLETION.path))?.asInt
-        val custom = event.getOption(JServices.getMessage(JMessages.GENERATE_CUSTOM_COMPLETION.path))?.asString
+        val customCodesRaw = event.getOption(JServices.getMessage(JMessages.GENERATE_CUSTOM_COMPLETION.path))?.asString
         val amount = event.getOption(JServices.getMessage(JMessages.GENERATE_AMOUNT_COMPLETION.path))?.asInt ?: 1
-        val template = event.getOption(JServices.getMessage(JMessages.GENERATE_TEMPLATE_COMPLETION.path))
-            ?.asString ?: DEFAULT_TEMPLATE
+        val template = event.getOption(JServices.getMessage(JMessages.GENERATE_TEMPLATE_COMPLETION.path))?.asString ?: DEFAULT_TEMPLATE
 
-        val generatedCodes = mutableListOf<String>()
-        val existingCodeSet = RedeemXAPI.code.getCodes().toSet()
+        // 1. Defer Reply: Essential because database ops take time
+        event.deferReply().queue()
 
-        // Handle custom codes
-        val customCodeList = custom?.split(" ")
-            ?.map(String::trim)
-            ?.filter(String::isNotEmpty)
-            ?.map { code ->
-                if (code.isNotEmpty() && code !in existingCodeSet) RedeemXAPI.code.generateCode(code, template) else null
-            } ?: emptyList()
+        // 2. Create the Adapter: Wraps the Discord event so it looks like a "Sender" to the service
+        val discordSender = DiscordRCXSender(event)
 
-        if (customCodeList.isNotEmpty()) {
-            RedeemXAPI.code.upsertCodes(customCodeList.mapNotNull { it })
-            generatedCodes.addAll(customCodeList.mapNotNull { it?.code })
-        }
+        val customCodesList = customCodesRaw?.split(" ") ?: emptyList()
 
-        // Handle digit-generated codes
-        digit?.let {
-            val digitCodes = RedeemXAPI.code.generateCode(digit, template, amount)
-            val newDigitCodes = digitCodes.filter { it.code !in existingCodeSet }
-            if (newDigitCodes.isNotEmpty()) {
-                RedeemXAPI.code.upsertCodes(newDigitCodes)
-                generatedCodes.addAll(newDigitCodes.map { it.code })
+        // CASE 1: Random Generation (With or without custom codes included)
+        if (digit != null) {
+            // Pass 'discordSender' instead of 'null'
+            // The Service will automatically call discordSender.sendMessage(...) using the message from messages.yml
+            RedeemX.create.create(digit, template, amount, customCodesList, discordSender) { _ ->
+                // Callback is now empty because the Service handles the success/failure message!
             }
-        }
-
-        // Reply
-        if (generatedCodes.isEmpty()) {
-            event.reply(JServices.getMessage(JMessages.GENERATE_FAILED.path)).setEphemeral(true).queue()
             return
         }
 
-        val replyMessage = JServices.getMessage(JMessages.GENERATE_SUCCESS.path)
-            .replace("{code}", generatedCodes.joinToString(" "))
-            .replace("{template}", template)
+        // CASE 2: Only Custom Codes (No random digits specified)
+        if (customCodesList.isNotEmpty()) {
+            RedeemX.create.create(customCodesList, template, discordSender) { _ ->
+                // Logic handled by Service + Adapter
+            }
+            return
+        }
 
-        event.reply(replyMessage).queue()
+        // CASE 3: No inputs provided (Fallback)
+        event.hook.sendMessage("Please provide either a digit for random generation or custom codes.").setEphemeral(true).queue()
     }
 
 
@@ -104,15 +95,10 @@ class RCXGenCommand : JRedeemCode {
         val focusedOption = event.focusedOption.name
         return when (focusedOption) {
             JServices.getMessage(JMessages.GENERATE_TEMPLATE_COMPLETION.path) -> {
-                RedeemXAPI.template.getTemplates()
+                RedeemX.redeemTemplateDao.getTemplates()
                     .take(25)
                     .map { Command.Choice(it, it) }
             }
-
-            JServices.getMessage(JMessages.GENERATE_DIGIT_COMPLETION.path) -> {
-                (1..10).map { Command.Choice(it.toString(), it.toString()) }
-            }
-
             else -> emptyList()
         }
     }

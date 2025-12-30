@@ -1,6 +1,7 @@
 package me.justlime.redeemxbot.commands.redeemcode
 
-import api.justlime.redeemcodex.RedeemXAPI
+import api.justlime.redeemcodex.RedeemX
+import me.justlime.redeemxbot.adapter.DiscordRCXSender
 import me.justlime.redeemxbot.commands.JRedeemCode
 import me.justlime.redeemxbot.enums.JMessages
 import me.justlime.redeemxbot.utils.JServices
@@ -47,63 +48,47 @@ class RCXDeleteCommand : JRedeemCode {
     }
 
     override fun execute(event: SlashCommandInteractionEvent) {
-        val subcommand = event.subcommandName
-        val optionValue = when (subcommand) {
-            JServices.getMessage(JMessages.DELETE_CODE_SUBCOMMAND.path) ->
-                event.getOption(JServices.getMessage(JMessages.DELETE_CODE_COMPLETION.path))?.asString
+        val subcommand = event.subcommandName ?: return
 
-            JServices.getMessage(JMessages.DELETE_TEMPLATE_SUBCOMMAND.path) ->
-                event.getOption(JServices.getMessage(JMessages.DELETE_TEMPLATE_COMPLETION.path))?.asString
+        // 1. Defer Reply
+        event.deferReply().queue()
 
-            else -> null
-        }
+        // 2. Create the Adapter
+        val discordSender = DiscordRCXSender(event)
 
-        val result = when (subcommand) {
+        when (subcommand) {
             JServices.getMessage(JMessages.DELETE_CODE_SUBCOMMAND.path) -> {
-                optionValue
-                    ?.split(" ")
-                    ?.map(String::trim)
-                    ?.filter { it.isNotEmpty() }
-                    ?.map { RedeemXAPI.code.deleteCode(it) }
-                    ?.any { it } ?: false
+                val input = event.getOption(JServices.getMessage(JMessages.DELETE_CODE_COMPLETION.path))?.asString ?: ""
+                val codes = input.split(" ").map { it.trim() }.filter { it.isNotEmpty() }
+
+                if (codes.isEmpty()) {
+                    event.hook.sendMessage("No codes provided.").setEphemeral(true).queue()
+                    return
+                }
+
+                // 3. Call Async Service with Adapter
+                // The Service will automatically invoke discordSender.sendMessage() with the correct config message.
+                RedeemX.delete.deleteCodes(discordSender, codes) { remainingCodes ->
+                    // Callback is empty because feedback is handled by the Service/Adapter now.
+                    // You can add specific extra logging here if needed, but standard logs are also in the Service.
+                }
             }
 
             JServices.getMessage(JMessages.DELETE_TEMPLATE_SUBCOMMAND.path) -> {
-                optionValue
-                    ?.split(" ")
-                    ?.map(String::trim)
-                    ?.filter { it.isNotEmpty() }
-                    ?.map { RedeemXAPI.template.deleteTemplate(it) }
-                    ?.any { it } ?: false
-            }
+                val input = event.getOption(JServices.getMessage(JMessages.DELETE_TEMPLATE_COMPLETION.path))?.asString ?: ""
+                val templates = input.split(" ").map { it.trim() }.filter { it.isNotEmpty() }
 
-            else -> false
+                if (templates.isEmpty()) {
+                    event.hook.sendMessage("No templates provided.").setEphemeral(true).queue()
+                    return
+                }
+
+                // 3. Call Async Service with Adapter
+                RedeemX.delete.deleteTemplates(discordSender, templates, true) { remainingTemplates ->
+                    // Feedback handled by Service/Adapter.
+                }
+            }
         }
-
-
-        if (!result) {
-            if (subcommand == JServices.getMessage(JMessages.DELETE_TEMPLATE_SUBCOMMAND.path)) {
-                event.reply(JServices.getMessage(JMessages.DELETE_TEMPLATE_FAILED.path)).setEphemeral(true).queue()
-                return
-            }
-            event.reply(JServices.getMessage(JMessages.DELETE_CODE_FAILED.path)).setEphemeral(true).queue()
-            return
-        }
-
-
-        val message = when (subcommand) {
-            JServices.getMessage(JMessages.DELETE_CODE_SUBCOMMAND.path) -> {
-                JServices.getMessage(JMessages.DELETE_CODE_SUCCESS.path).replace("{code}", optionValue ?: "")
-            }
-
-            JServices.getMessage(JMessages.DELETE_TEMPLATE_SUBCOMMAND.path) -> {
-                JServices.getMessage(JMessages.DELETE_CODE_SUCCESS.path).replace("{template}", optionValue ?: "")
-            }
-            else -> JServices.getMessage(JMessages.INVALID_SUBCOMMAND.path)
-        }
-
-
-        event.reply(message).queue()
     }
 
     override fun handleAutoComplete(event: CommandAutoCompleteInteractionEvent): List<Command.Choice> {
@@ -119,7 +104,7 @@ class RCXDeleteCommand : JRedeemCode {
 
         return when (focusedOption) {
             JServices.getMessage(JMessages.DELETE_CODE_COMPLETION.path) -> {
-                RedeemXAPI.code.getCodes()
+                RedeemX.redeemCodeDao.getCachedCodes()
                     .filter { code ->
                         val lower = code.lowercase()
                         lower.contains(query) && !alreadyEntered.contains(code)
@@ -132,7 +117,7 @@ class RCXDeleteCommand : JRedeemCode {
             }
 
             JServices.getMessage(JMessages.DELETE_TEMPLATE_COMPLETION.path) -> {
-                RedeemXAPI.template.getTemplates()
+                RedeemX.redeemTemplateDao.getTemplates()
                     .filter { template ->
                         val lower = template.lowercase()
                         lower.contains(query) && !alreadyEntered.contains(template)
@@ -147,5 +132,4 @@ class RCXDeleteCommand : JRedeemCode {
             else -> emptyList()
         }
     }
-
 }

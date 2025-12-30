@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.1.0"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    kotlin("jvm") version "2.1.21"
+    id("com.gradleup.shadow") version "8.3.6"
 }
 
 group = "me.justlime"
@@ -20,11 +20,11 @@ repositories {
 }
 
 dependencies {
-    compileOnly("org.spigotmc:spigot-api:1.21.1-R0.1-SNAPSHOT")
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    compileOnly("org.spigotmc:spigot-api:1.21.10-R0.1-SNAPSHOT")
+    compileOnly(kotlin("stdlib"))
     compileOnly("me.clip:placeholderapi:2.11.6")
-    compileOnly("com.github.ItzYashvardhan:RedeemCodeX-API:1.0.0")
-    implementation("net.dv8tion:JDA:5.6.1") {
+    compileOnly("com.github.ItzYashvardhan:RedeemCodeX-API")
+    implementation("net.dv8tion:JDA:6.2.0") {
         exclude(module = "opus-java")
         exclude(module = "kotlin-stdlib")
         exclude(module = "slf4j-nop")
@@ -77,8 +77,8 @@ tasks.processResources {
 // Task to copy the jar to the server plugins folder
 tasks.register<Copy>("copyToServerPlugins") {
     dependsOn("shadowJar")  // Ensure shadowJar completes before copying
-    from(layout.buildDirectory.file("libs/${project.name}-${project.version}.jar"))  // Correct output file path
-    into("E:/Minecraft/servers/Plugin-Maker/plugins")  // Destination folder
+    from(tasks.shadowJar.get().outputs.files.singleFile)
+    into("E:/Minecraft/servers/Development/PaperMC-1.21.10/plugins")
 }
 
 // Combined task to build and copy
