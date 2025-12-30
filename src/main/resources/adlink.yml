@@ -1,0 +1,43 @@
+# ----------------------------------------------------------------#
+# Configuration for the public /generate command with ad links. #
+# ----------------------------------------------------------------#
+ad-link:
+  # Set to true to enable the public /generate command.
+  enabled: true
+
+  # Customize the public command's name and description.
+  # For example, you can rename it to /daily, /reward, etc.
+  command:
+    name: "generate"
+    description: "Generate a unique link to claim a reward."
+
+  # A map of templates and their corresponding chance weight.
+  # The name of the template is the key, and the chance is the value.
+  # The total chance doesn't have to be 100, it's a weighted system.
+  templates:
+    COMMON_REWARD: 80
+    RARE_REWARD: 20
+    EPIC_REWARD: 5
+
+  # Cooldown for how often a user can generate a link.
+  cooldown:
+    # The number of times a user can use the command within the duration.
+    limit: 2
+    # The time frame for the limit, in seconds. (e.g., 3600 = 1 hour, 86400 = 1 day)
+    duration-seconds: 3600
+
+  # The format for your ad-provider link.
+  # {redirect_url} will be replaced with the URL-encoded final destination link.
+  ad-link-format: "https://your-ad-service.com/ad?url={redirect_url}"
+
+  # The format for the final destination URL after the ad is passed.
+  # {code} will be replaced with the generated redeem code.
+  redirect-url-format: "https://www.example.com/redeem/{code}"
+
+  # The message sent to the user when they use the /generate command.
+  # {link} will be replaced with the generated ad link.
+  reply-message: "✅ Your unique link is ready! Please visit the following URL to claim your reward:\n\n**{link}**"
+
+  # Message sent when the user is on cooldown.
+  # {time} will be replaced with the remaining time (e.g., "5 minutes and 30 seconds").
+  cooldown-message: "You have reached the generation limit. Please try again in **{time}**."

@@ -1,6 +1,7 @@
 package me.justlime.redeemxbot.listener
 
 import me.justlime.redeemxbot.commands.JRedeemCode
+import me.justlime.redeemxbot.commands.PublicGenerateCommand
 import me.justlime.redeemxbot.commands.redeemcode.RCXCreateCommand
 import me.justlime.redeemxbot.commands.redeemcode.RCXDeleteCommand
 import me.justlime.redeemxbot.commands.redeemcode.RCXUsageCommand
@@ -9,6 +10,8 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.InteractionContextType
+import java.util.concurrent.ConcurrentHashMap
 
 class CommandManager(
     private val jda: JDA,
@@ -17,91 +20,117 @@ class CommandManager(
     private val channels: List<String>
 ) : ListenerAdapter() {
 
-    private val commands = mutableMapOf<String, JRedeemCode>()
+    private val commands = ConcurrentHashMap<String, JRedeemCode>()
 
     fun initializeCommands() {
-        val commands = listOf(
+        val guildCommands = listOf(
             RCXCreateCommand(),
             RCXDeleteCommand(),
-//            RCXModifyCommand(),
             RCXUsageCommand(),
         )
+        val globalCommands = listOf(
+            PublicGenerateCommand()
+        )
         jda.awaitReady()
-        register(*commands.toTypedArray())
+        registerGuildCommands(guildCommands)
+        registerGlobalCommands(globalCommands)
     }
 
-    /**
-     * Registers all commands at once.
-     */
-    private fun register(vararg commandList: JRedeemCode) {
-        // Register commands to the internal map
+    private fun registerGuildCommands(commandList: List<JRedeemCode>) {
         commandList.forEach { cmd ->
             val data = cmd.buildCommand()
             commands[data.name] = cmd
         }
+        val commandDataList = commandList.map { it.buildCommand() }
 
-        // Prepare a list of all command data
-        val commandDataList = commands.values.map { it.buildCommand() }
-
-        // Register to all guilds
         jda.guilds.forEach { guild ->
+            if (guild.id !in guilds) return@forEach
             guild.updateCommands()
                 .addCommands(commandDataList)
                 .queue { registered ->
-                    // log registered command names
-                     rxbPlugin.logger.info("Registered commands for ${guild.name}: ${registered.map { it.name }}")
+                    rxbPlugin.logger.info("Registered ${registered.size} guild commands for ${guild.name}.")
                 }
         }
     }
 
-
-    /**
-     * Handles command execution.
-     */
-    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
-        if (!event.isFromGuild) return
-        val guildId = event.guild?.id ?: return
-
-        if (!guilds.contains(guildId)) {
-            event.guild?.leave()?.queue()
-            return
+    private fun registerGlobalCommands(commandList: List<JRedeemCode>) {
+        commandList.forEach { cmd ->
+            val data = cmd.buildCommand()
+            commands[data.name] = cmd
         }
+        val commandDataList = commandList.map { it.buildCommand() }
 
-        val member = event.member ?: return
-        if (!member.roles.any { it.id in roles }) {
-            event.reply("You don't have permission to use this command.").setEphemeral(true).queue()
-            return
+        jda.updateCommands().addCommands(commandDataList).queue { registered ->
+            rxbPlugin.logger.info("Registered ${registered.size} global commands.")
         }
-
-        if (event.channel.id !in channels) {
-            event.reply("You can't use this command in this channel.").setEphemeral(true).queue()
-            return
-        }
-
-        commands[event.name]?.execute(event)
-            ?: event.reply("Unknown command!").setEphemeral(true).queue()
     }
 
-    /**
-     * Handles auto-completion events.
-     */
-    override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
-        if (!event.isFromGuild) return
-        val guildId = event.guild?.id ?: return
-        if (!guilds.contains(guildId)) {
-            event.guild?.leave()?.queue()
+    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
+        val command = commands[event.name] ?: return
+
+        // Handle DM commands (which are always public in this design)
+        if (event.interaction.context == InteractionContextType.BOT_DM) {
+            if (command is PublicGenerateCommand) {
+                command.execute(event)
+            }
             return
         }
 
-        if (event.channel.id !in channels) return
+        // Handle Guild commands
+        if (event.isFromGuild) {
+            val guildId = event.guild?.id ?: return
+            if (guildId !in guilds) {
+                event.guild?.leave()?.queue()
+                return
+            }
 
-        val member = event.member ?: return
-        if (!member.roles.any { it.id in roles }) return
+            // Public commands in a guild (if any were added) would be handled here
+            if (command is PublicGenerateCommand) {
+                command.execute(event)
+                return
+            }
 
-        val command = commands[event.name]
-        if (command != null) {
-            val completions = command.handleAutoComplete(event)
-            event.replyChoices(completions).queue()
+            // --- Private Command Logic ---
+            val member = event.member ?: return
+            if (member.roles.none { it.id in roles }) {
+                event.reply("You don't have permission to use this command.").setEphemeral(true).queue()
+                return
+            }
+
+            if (event.channel.id !in channels) {
+                event.reply("You can't use this command in this channel.").setEphemeral(true).queue()
+                return
+            }
+
+            command.execute(event)
+        }
+    }
+
+    override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
+        val command = commands[event.name] ?: return
+
+        if (event.interaction.context == InteractionContextType.BOT_DM) {
+            if (command is PublicGenerateCommand) {
+                command.handleAutoComplete(event).let { event.replyChoices(it).queue() }
+            }
+            return
+        }
+
+        if (event.isFromGuild) {
+            val guildId = event.guild?.id ?: return
+            if (guildId !in guilds) return
+
+            if (command is PublicGenerateCommand) {
+                command.handleAutoComplete(event).let { event.replyChoices(it).queue() }
+                return
+            }
+            
+            // --- Private Command Logic ---
+            if (event.channel.id !in channels) return
+            val member = event.member ?: return
+            if (member.roles.none { it.id in roles }) return
+
+            command.handleAutoComplete(event).let { event.replyChoices(it).queue() }
         }
     }
 }

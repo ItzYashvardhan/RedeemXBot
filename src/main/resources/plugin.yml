@@ -6,3 +6,8 @@ depend: [RedeemX]
 softdepend:
   - PlaceholderAPI
 
+commands:
+  linkdiscord:
+    description: "Links your Minecraft account to your Discord account."
+    usage: "/linkdiscord"
+    aliases: [discordlink, link]

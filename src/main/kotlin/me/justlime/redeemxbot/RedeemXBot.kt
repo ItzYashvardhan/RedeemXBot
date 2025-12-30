@@ -1,6 +1,9 @@
 package me.justlime.redeemxbot
 
 import me.justlime.redeemxbot.commands.configuration.ConfigManager
+import me.justlime.redeemxbot.linking.LinkCommand
+import me.justlime.redeemxbot.linking.LinkListener
+import me.justlime.redeemxbot.linking.LinkManager
 import me.justlime.redeemxbot.listener.CommandManager
 import me.justlime.redeemxbot.listener.GuildJoinListener
 import me.justlime.redeemxbot.utils.JServices
@@ -9,11 +12,11 @@ import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
 import java.time.Duration
 
-
 lateinit var rxbPlugin: RedeemXBot
 
 class RedeemXBot : JavaPlugin() {
     private lateinit var jda: JDA
+    private lateinit var linkManager: LinkManager
 
     override fun onEnable() {
         Class.forName("org.slf4j.LoggerFactory")
@@ -59,30 +62,31 @@ class RedeemXBot : JavaPlugin() {
 
         // Initialize JDA
         try {
-            try {
-                jda = BotManager.buildBot(token).apply { awaitReady() }
-            } catch (e: Exception) {
-                this.logger.info("Force Reloaded Bot")
-            }
-            jda.guilds.forEach { guild ->
-                if (guild.id !in guilds) {
-                    logger.warning("Leaving unauthorized guild: ${guild.name} (${guild.id})")
-                    guild.leave().queue()
-                }
-            }
+            jda = BotManager.buildBot(token).apply { awaitReady() }
             logger.info("Bot connected successfully.")
 
             // Initialize commands and register listeners
             val commandManager = CommandManager(jda, guilds, roles, channels)
             commandManager.initializeCommands()
 
+            //Initialize Account Linking System
+            linkManager = LinkManager()
+            linkManager.loadLinks()
+            val linkCommandName = linkManager.config.getString("linking.command-name", "linkdiscord")!!
+            val linkCommandAliases = linkManager.config.getStringList("linking.command-aliases")
+            getCommand(linkCommandName)?.let {
+                it.setExecutor(LinkCommand(linkManager))
+                it.aliases = linkCommandAliases
+            }
+
             jda.addEventListener(commandManager)
             jda.addEventListener(GuildJoinListener(guilds))
-            return
+            jda.addEventListener(LinkListener(linkManager)) // Add the DM listener
+
         } catch (exception: Exception) {
             logger.severe("Failed to initialize the Discord bot: ${exception.message}")
             exception.printStackTrace()
-            return server.pluginManager.disablePlugin(this)
+            server.pluginManager.disablePlugin(this)
         }
     }
 
@@ -93,8 +97,8 @@ class RedeemXBot : JavaPlugin() {
             client.dispatcher.executorService.shutdown()
             jda.shutdownNow()
             if (!jda.awaitShutdown(Duration.ofSeconds(3))) {
-                jda.shutdownNow(); // Cancel request queue
-                jda.awaitShutdown(); // Wait until shutdown is complete (indefinitely)
+                jda.shutdownNow()
+                jda.awaitShutdown()
             }
             logger.info("Bot has been shut down.")
         }
@@ -106,4 +110,6 @@ class RedeemXBot : JavaPlugin() {
         }
         saveDefaultConfig()
     }
+
+    fun getJDA(): JDA = jda
 }

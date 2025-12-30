@@ -1,0 +1,40 @@
+# ---------------------------------------------------#
+# Configuration for Minecraft to Discord account linking. #
+# ---------------------------------------------------#
+linking:
+  # The main command players will use in-game.
+  command-name: "linkdiscord"
+  # Aliases for the command.
+  command-aliases: ["discordlink", "link"]
+
+  # The length of the temporary code given to the player.
+  code-length: 6
+  # How long the code is valid for, in seconds. (e.g., 300 = 5 minutes)
+  code-expiry-seconds: 300
+
+  # --- In-Game Messages ---
+  # Message sent to the player when they run the command.
+  # {code} will be replaced with their unique code.
+  # {bot_name} will be replaced with the bot's name.
+  code-message:
+    - "&aYour unique linking code is: &e&l{code}"
+    - "&7Please send this code as a Direct Message (DM) to our Discord bot: &b{bot_name}"
+    - "&7This code will expire in 5 minutes."
+
+  # Message sent if the player is already linked.
+  already-linked-ingame: "&cYour Minecraft account is already linked to a Discord account."
+
+  # Message sent to the player in-game upon successful linking.
+  # {discord_name} will be replaced with the user's Discord name (e.g., "username#1234").
+  success-ingame: "&aSuccess! Your account has been linked to the Discord user: &b{discord_name}"
+
+  # --- Discord Bot Messages (DMs) ---
+  # Message sent to the user on Discord for a successful link.
+  # {player_name} will be replaced with the user's Minecraft name.
+  success-discord: "✅ Success! Your Discord account has been linked to the Minecraft player: **{player_name}**."
+
+  # Message sent if the user is already linked to a Minecraft account.
+  already-linked-discord: "⚠️ Your Discord account is already linked to a Minecraft account."
+
+  # Message sent if the provided code is invalid or expired.
+  invalid-code-discord: "❌ The code you provided is invalid or has expired. Please generate a new one in-game using `/linkdiscord`."
