@@ -1,28 +1,23 @@
 package me.justlime.redeemxbot.commands
 
-import api.justlime.redeemcodex.RedeemX
+import me.justlime.redeemxbot.RedeemXBot
 import me.justlime.redeemxbot.adapter.DiscordRCXSender
-import me.justlime.redeemxbot.rxbPlugin
+import me.justlime.redeemxbot.utils.JService
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.justlime.redeemcodex.RedeemX
 import org.bukkit.configuration.file.FileConfiguration
-import org.bukkit.configuration.file.YamlConfiguration
-import java.io.File
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 
-class PublicGenerateCommand : JRedeemCode {
+class PublicGenerateCommand : DCommand {
 
     private val adLinkConfig: FileConfiguration by lazy {
-        val file = File(rxbPlugin.dataFolder, "adlink.yml")
-        if (!file.exists()) {
-            rxbPlugin.saveResource("adlink.yml", false)
-        }
-        YamlConfiguration.loadConfiguration(file)
+        JService.adLink
     }
 
     // In-memory storage for user cooldowns. Maps UserId -> List of generation timestamps.
@@ -55,7 +50,7 @@ class PublicGenerateCommand : JRedeemCode {
             val oldestTimestamp = userTimestamps.first()
             val remainingTime = (oldestTimestamp + cooldownDuration - currentTime) / 1000
             val cooldownMessage = adLinkConfig.getString("ad-link.cooldown-message", "You are on cooldown. Please try again in **{time}**.")
-            event.reply(formatCooldownMessage(cooldownMessage ?: "", remainingTime)).setEphemeral(true).queue()
+            event.reply(formatCooldownMessage(cooldownMessage ?: "You are on cooldown. Please try again in **{time}**.", remainingTime)).setEphemeral(true).queue()
             return
         }
 
@@ -65,7 +60,7 @@ class PublicGenerateCommand : JRedeemCode {
         val template = getWeightedRandomTemplate()
         if (template == null) {
             event.hook.sendMessage("Could not determine a reward template. Please contact an administrator.").queue()
-            rxbPlugin.logger.warning("No valid templates found in adlink.yml or total chance is zero.")
+            RedeemXBot.instance.logger.warning("No valid templates found in ad-link.yml or total chance is zero.")
             return
         }
 
@@ -75,7 +70,7 @@ class PublicGenerateCommand : JRedeemCode {
 
         if (adLinkFormat.isNullOrBlank() || redirectUrlFormat.isNullOrBlank() || replyMessage.isNullOrBlank()) {
             event.hook.sendMessage("Configuration for the generation link is incomplete. Please contact an administrator.").queue()
-            rxbPlugin.logger.warning("adlink.yml is missing one or more required values!")
+            RedeemXBot.instance.logger.warning("ad-link.yml is missing one or more required values!")
             return
         }
 

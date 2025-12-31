@@ -32,6 +32,7 @@
 
 package me.justlime.redeemxbot.linking
 
+import me.justlime.redeemxbot.utils.JService
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.bukkit.Bukkit
@@ -48,7 +49,7 @@ class LinkListener(private val linkManager: LinkManager) : ListenerAdapter() {
 
             // Check if the user is already linked
             if (linkManager.isDiscordLinked(discordId)) {
-                val message = linkManager.config.getString("linking.already-linked-discord", "Your account is already linked.")
+                val message = JService.linking.getString("linking.already-linked-discord", "Your account is already linked.")
                 discordUser.openPrivateChannel().queue { it.sendMessage(message!!).queue() }
                 return
             }
@@ -62,21 +63,21 @@ class LinkListener(private val linkManager: LinkManager) : ListenerAdapter() {
 
             if (newLink != null) {
                 // Success! Send confirmation messages.
-                val successDiscordMsg = linkManager.config.getString("linking.success-discord", "Success! Linked to **{player_name}**.")
+                val successDiscordMsg = JService.linking.getString("linking.success-discord", "Success! Linked to **{player_name}**.")
                     ?.replace("{player_name}", newLink.playerName)
                 discordUser.openPrivateChannel().queue { it.sendMessage(successDiscordMsg!!).queue() }
 
                 // Also send a message to the player in-game if they are online
                 val onlinePlayer = Bukkit.getPlayer(newLink.playerUUID)
                 if (onlinePlayer != null && onlinePlayer.isOnline) {
-                    val successIngameMsg = linkManager.config.getString("linking.success-ingame", "&aSuccess! Linked to &b{discord_name}.")
+                    val successInGameMsg =  JService.linking.getString("linking.success-ingame", "&aSuccess! Linked to &b{discord_name}.")
                         ?.replace("{discord_name}", "${discordUser.name}#${discordUser.discriminator}")
-                    onlinePlayer.sendMessage(ChatColor.translateAlternateColorCodes('&', successIngameMsg!!))
+                    onlinePlayer.sendMessage(ChatColor.translateAlternateColorCodes('&', successInGameMsg!!))
                 }
 
             } else {
                 // Failure - invalid or expired code
-                val invalidCodeMsg = linkManager.config.getString("linking.invalid-code-discord", "Invalid or expired code.")
+                val invalidCodeMsg =  JService.linking.getString("linking.invalid-code-discord", "Invalid or expired code.")
                 discordUser.openPrivateChannel().queue { it.sendMessage(invalidCodeMsg!!).queue() }
             }
         }

@@ -1,6 +1,5 @@
 package me.justlime.redeemxbot.commands.redeemcode
 
-import api.justlime.redeemcodex.RedeemX
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.Command
@@ -10,6 +9,7 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
+import net.justlime.redeemcodex.RedeemX
 
 class RCXModifyCommand {
     fun buildCommand(): CommandData {

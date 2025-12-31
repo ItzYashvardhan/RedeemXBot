@@ -30,32 +30,31 @@
  * Discord: https://discord.gg/rVsUJ4keZN
  */
 
-package me.justlime.redeemxbot.linking
+package me.justlime.redeemxbot.commands
 
-import java.util.*
+import me.justlime.redeemxbot.RedeemXBot
+import me.justlime.redeemxbot.utils.JService
+import net.justlime.redeemcodex.enums.JConfig
 
-/**
- * Represents the data stored for a pending link request.
- *
- * @param playerUUID The Minecraft player's unique ID.
- * @param code The temporary, unique code given to the player.
- * @param expiryTime The system timestamp (in milliseconds) when this code expires.
- */
-data class PendingLink(
-    val playerUUID: UUID,
-    val code: String,
-    val expiryTime: Long
-)
+class GameCommandManager(plugin: RedeemXBot) {
+    val commandHelper = PluginCommandRedefiner(plugin)
+    private val linkCommand = LinkCommand(plugin)
+    private val linkCommandCompletion = LinkCommand(plugin)
 
-/**
- * Represents a completed and stored account link.
- *
- * @param playerUUID The Minecraft player's unique ID.
- * @param playerName The Minecraft player's name (for display purposes).
- * @param discordId The Discord user's unique ID.
- */
-data class AccountLink(
-    val playerUUID: UUID,
-    var playerName: String,
-    val discordId: String
-)
+    init {
+
+        val linkCommandAliases = JService.linking.getStringList(JConfig.Linking.COMMAND_ALIASES)
+        linkCommandAliases.add(0, "codelink")
+
+        plugin.getCommand("codelink")?.apply {
+            setExecutor(linkCommand)
+            tabCompleter = linkCommandCompletion
+        }
+
+        try {
+            commandHelper.registerCommandWithExecutor(linkCommandAliases, linkCommand, linkCommand)
+        } catch (e: Exception) {
+            RedeemXBot.instance.logger.warning("Command aliases are not yet supported on this server version.")
+        }
+    }
+}

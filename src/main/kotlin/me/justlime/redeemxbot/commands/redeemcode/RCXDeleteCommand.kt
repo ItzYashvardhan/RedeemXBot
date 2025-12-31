@@ -1,10 +1,9 @@
 package me.justlime.redeemxbot.commands.redeemcode
 
-import api.justlime.redeemcodex.RedeemX
 import me.justlime.redeemxbot.adapter.DiscordRCXSender
-import me.justlime.redeemxbot.commands.JRedeemCode
+import me.justlime.redeemxbot.commands.DCommand
 import me.justlime.redeemxbot.enums.JMessages
-import me.justlime.redeemxbot.utils.JServices
+import me.justlime.redeemxbot.utils.JService
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.Command
@@ -14,33 +13,34 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
+import net.justlime.redeemcodex.RedeemX
 
-class RCXDeleteCommand : JRedeemCode {
+class RCXDeleteCommand : DCommand {
 
     override fun buildCommand(): CommandData {
         return Commands.slash(
-            JServices.getMessage(JMessages.DELETE_COMMAND.path),
-            JServices.getMessage(JMessages.DELETE_DESCRIPTION.path)
+            JService.getCommandString(JMessages.DELETE_COMMAND.path),
+            JService.getCommandString(JMessages.DELETE_DESCRIPTION.path)
         ).addSubcommands(
             SubcommandData(
-                JServices.getMessage(JMessages.DELETE_CODE_SUBCOMMAND.path),
-                JServices.getMessage(JMessages.DELETE_CODE_DESCRIPTION.path)
+                JService.getCommandString(JMessages.DELETE_CODE_SUBCOMMAND.path),
+                JService.getCommandString(JMessages.DELETE_CODE_DESCRIPTION.path)
             ).addOptions(
                 OptionData(
                     OptionType.STRING,
-                    JServices.getMessage(JMessages.DELETE_CODE_COMPLETION.path),
-                    JServices.getMessage(JMessages.DELETE_CODE_OPTION_DESCRIPTION.path),
+                    JService.getCommandString(JMessages.DELETE_CODE_COMPLETION.path),
+                    JService.getCommandString(JMessages.DELETE_CODE_OPTION_DESCRIPTION.path),
                     false
                 ).setAutoComplete(true)
             ),
             SubcommandData(
-                JServices.getMessage(JMessages.DELETE_TEMPLATE_SUBCOMMAND.path),
-                JServices.getMessage(JMessages.DELETE_TEMPLATE_DESCRIPTION.path)
+                JService.getCommandString(JMessages.DELETE_TEMPLATE_SUBCOMMAND.path),
+                JService.getCommandString(JMessages.DELETE_TEMPLATE_DESCRIPTION.path)
             ).addOptions(
                 OptionData(
                     OptionType.STRING,
-                    JServices.getMessage(JMessages.DELETE_TEMPLATE_COMPLETION.path),
-                    JServices.getMessage(JMessages.DELETE_TEMPLATE_OPTION_DESCRIPTION.path),
+                    JService.getCommandString(JMessages.DELETE_TEMPLATE_COMPLETION.path),
+                    JService.getCommandString(JMessages.DELETE_TEMPLATE_OPTION_DESCRIPTION.path),
                     false
                 ).setAutoComplete(true)
             )
@@ -57,8 +57,8 @@ class RCXDeleteCommand : JRedeemCode {
         val discordSender = DiscordRCXSender(event)
 
         when (subcommand) {
-            JServices.getMessage(JMessages.DELETE_CODE_SUBCOMMAND.path) -> {
-                val input = event.getOption(JServices.getMessage(JMessages.DELETE_CODE_COMPLETION.path))?.asString ?: ""
+            JService.getCommandString(JMessages.DELETE_CODE_SUBCOMMAND.path) -> {
+                val input = event.getOption(JService.getCommandString(JMessages.DELETE_CODE_COMPLETION.path))?.asString ?: ""
                 val codes = input.split(" ").map { it.trim() }.filter { it.isNotEmpty() }
 
                 if (codes.isEmpty()) {
@@ -74,8 +74,8 @@ class RCXDeleteCommand : JRedeemCode {
                 }
             }
 
-            JServices.getMessage(JMessages.DELETE_TEMPLATE_SUBCOMMAND.path) -> {
-                val input = event.getOption(JServices.getMessage(JMessages.DELETE_TEMPLATE_COMPLETION.path))?.asString ?: ""
+            JService.getCommandString(JMessages.DELETE_TEMPLATE_SUBCOMMAND.path) -> {
+                val input = event.getOption(JService.getCommandString(JMessages.DELETE_TEMPLATE_COMPLETION.path))?.asString ?: ""
                 val templates = input.split(" ").map { it.trim() }.filter { it.isNotEmpty() }
 
                 if (templates.isEmpty()) {
@@ -103,7 +103,7 @@ class RCXDeleteCommand : JRedeemCode {
         val maxChoices = 25
 
         return when (focusedOption) {
-            JServices.getMessage(JMessages.DELETE_CODE_COMPLETION.path) -> {
+            JService.getCommandString(JMessages.DELETE_CODE_COMPLETION.path) -> {
                 RedeemX.redeemCodeDao.getCachedCodes()
                     .filter { code ->
                         val lower = code.lowercase()
@@ -116,7 +116,7 @@ class RCXDeleteCommand : JRedeemCode {
                     }
             }
 
-            JServices.getMessage(JMessages.DELETE_TEMPLATE_COMPLETION.path) -> {
+            JService.getCommandString(JMessages.DELETE_TEMPLATE_COMPLETION.path) -> {
                 RedeemX.redeemTemplateDao.getTemplates()
                     .filter { template ->
                         val lower = template.lowercase()

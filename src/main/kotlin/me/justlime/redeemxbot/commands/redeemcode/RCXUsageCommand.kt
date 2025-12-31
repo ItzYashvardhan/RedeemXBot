@@ -1,8 +1,8 @@
 package me.justlime.redeemxbot.commands.redeemcode
 
-import me.justlime.redeemxbot.commands.JRedeemCode
+import me.justlime.redeemxbot.commands.DCommand
 import me.justlime.redeemxbot.enums.JMessages
-import me.justlime.redeemxbot.utils.JServices
+import me.justlime.redeemxbot.utils.JService
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
@@ -13,31 +13,31 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 
-class RCXUsageCommand : JRedeemCode {
+class RCXUsageCommand : DCommand {
     override fun buildCommand(): CommandData {
         return Commands.slash(
-            JServices.getMessage(JMessages.USAGE_COMMAND.path),
-            JServices.getMessage(JMessages.USAGE_DESCRIPTION.path)
+            JService.getCommandString(JMessages.USAGE_COMMAND.path),
+            JService.getCommandString(JMessages.USAGE_DESCRIPTION.path)
         ).addSubcommands(
             SubcommandData(
-                JServices.getMessage(JMessages.USAGE_CODE_SUBCOMMAND.path),
-                JServices.getMessage(JMessages.USAGE_CODE_DESCRIPTION.path)
+                JService.getCommandString(JMessages.USAGE_CODE_SUBCOMMAND.path),
+                JService.getCommandString(JMessages.USAGE_CODE_DESCRIPTION.path)
             ).addOptions(
                 OptionData(
                     OptionType.STRING,
-                    JServices.getMessage(JMessages.USAGE_CODE_COMPLETION.path),
-                    JServices.getMessage(JMessages.USAGE_CODE_OPTION_DESCRIPTION.path),
+                    JService.getCommandString(JMessages.USAGE_CODE_COMPLETION.path),
+                    JService.getCommandString(JMessages.USAGE_CODE_OPTION_DESCRIPTION.path),
                     true
                 ).setAutoComplete(true)
             ),
             SubcommandData(
-                JServices.getMessage(JMessages.USAGE_TEMPLATE_SUBCOMMAND.path),
-                JServices.getMessage(JMessages.USAGE_TEMPLATE_DESCRIPTION.path)
+                JService.getCommandString(JMessages.USAGE_TEMPLATE_SUBCOMMAND.path),
+                JService.getCommandString(JMessages.USAGE_TEMPLATE_DESCRIPTION.path)
             ).addOptions(
                 OptionData(
                     OptionType.STRING,
-                    JServices.getMessage(JMessages.USAGE_TEMPLATE_COMPLETION.path),
-                    JServices.getMessage(JMessages.USAGE_TEMPLATE_OPTION_DESCRIPTION.path),
+                    JService.getCommandString(JMessages.USAGE_TEMPLATE_COMPLETION.path),
+                    JService.getCommandString(JMessages.USAGE_TEMPLATE_OPTION_DESCRIPTION.path),
                     true
                 ).setAutoComplete(true)
             )
@@ -46,8 +46,8 @@ class RCXUsageCommand : JRedeemCode {
 
     override fun execute(event: SlashCommandInteractionEvent) {
         val subcommand = event.subcommandName
-        val code = event.getOption(JServices.getMessage(JMessages.USAGE_CODE_COMPLETION.path))?.asString
-        val template = event.getOption(JServices.getMessage(JMessages.USAGE_TEMPLATE_COMPLETION.path))?.asString
+        val code = event.getOption(JService.getCommandString(JMessages.USAGE_CODE_COMPLETION.path))?.asString
+        val template = event.getOption(JService.getCommandString(JMessages.USAGE_TEMPLATE_COMPLETION.path))?.asString
 
 //        val reply = when (subcommand) {
 //            JServices.getMessage(JMessages.USAGE_CODE_SUBCOMMAND.path) -> {

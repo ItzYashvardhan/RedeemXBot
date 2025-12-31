@@ -2,17 +2,18 @@
 # Configuration for Minecraft to Discord account linking. #
 # ---------------------------------------------------#
 linking:
-  # The main command players will use in-game.
-  command-name: "linkdiscord"
-  # Aliases for the command.
-  command-aliases: ["discordlink", "link"]
+
+  link-command:
+    aliases:
+    - "discordlink"
+    - "link"
 
   # The length of the temporary code given to the player.
-  code-length: 6
+  pin-length: 6
   # How long the code is valid for, in seconds. (e.g., 300 = 5 minutes)
-  code-expiry-seconds: 300
+  expiry: 300
 
-  # --- In-Game Messages ---
+  # In-Game Messages
   # Message sent to the player when they run the command.
   # {code} will be replaced with their unique code.
   # {bot_name} will be replaced with the bot's name.
@@ -28,7 +29,7 @@ linking:
   # {discord_name} will be replaced with the user's Discord name (e.g., "username#1234").
   success-ingame: "&aSuccess! Your account has been linked to the Discord user: &b{discord_name}"
 
-  # --- Discord Bot Messages (DMs) ---
+  # Discord Bot Messages (DMs)
   # Message sent to the user on Discord for a successful link.
   # {player_name} will be replaced with the user's Minecraft name.
   success-discord: "✅ Success! Your Discord account has been linked to the Minecraft player: **{player_name}**."

@@ -16,6 +16,7 @@ repositories {
     }
     maven { url = uri("https://jitpack.io") }
     maven("https://repo.extendedclip.com/releases/") { name = "extendedclip" }
+    maven("https://repo.tcoded.com/releases") { name = "tcoded-releases" }
 
 }
 
@@ -30,7 +31,7 @@ dependencies {
         exclude(module = "slf4j-nop")
         exclude(module="tink")
     }
-
+    implementation("com.tcoded:FoliaLib:0.5.1")
 
 }
 
@@ -47,7 +48,12 @@ tasks.shadowJar {
         // Exclude specific runtime dependencies
         exclude(dependency("org.slf4j:slf4j-api:.*"))
         exclude(dependency("org.slf4j:slf4j-simple:.*"))
+        exclude(dependency("com.tcoded:FoliaLib"))
     }
+
+    relocate("com.tcoded", "me.justlime.redeemxbot.libs.tcoded")
+    relocate("net.dv8tion", "me.justlime.redeemxbot.libs.dv8tion")
+    relocate("org.slf4j", "me.justlime.redeemxbot.libs.slf4j")
 
 
 

@@ -1,48 +1,32 @@
 package me.justlime.redeemxbot.commands.configuration
 
-import me.justlime.redeemxbot.enums.JFiles
 import me.justlime.redeemxbot.enums.JMessages
-import me.justlime.redeemxbot.rxbPlugin
+import me.justlime.redeemxbot.utils.ConfigLoader
+import me.justlime.redeemxbot.utils.JService
 import org.bukkit.configuration.file.FileConfiguration
-import org.bukkit.configuration.file.YamlConfiguration
-import java.io.File
 
 class ConfigManager {
     lateinit var configuration: FileConfiguration
-    lateinit var messages: FileConfiguration
-    lateinit var payments: FileConfiguration
-
 
     init {
-        loadMessageConfig()
+        reload()
     }
 
-    fun loadMessageConfig() {
-        this.configuration = rxbPlugin.config
-        val file = getFile(JFiles.MESSAGES.fileName)
-        val config = YamlConfiguration.loadConfiguration(file)
+    fun reload() {
+
+        // Load the commands configuration from the 'bot' subdirectory
+        JService.config = ConfigLoader.loadConfig("bot", "config.yml")
+        JService.commands = ConfigLoader.loadConfig("bot", "commands.yml")
+        JService.messages = ConfigLoader.loadConfig("bot", "messages.yml")
+        JService.adLink = ConfigLoader.loadConfig("bot", "ad-link.yml")
+        JService.linking = ConfigLoader.loadConfig("bot", "linking.yml")
+
+
+        // Ensure default values are present
         JMessages.entries.forEach {
-            if (config.getString(it.path) == null) {
-                config.set(it.path, it.path)
+            if (JService.commands.getString(it.path) == null) {
+                JService.commands.set(it.path, it.path)
             }
         }
-        config.save(file)
-        this.messages = config
-        this.payments = YamlConfiguration.loadConfiguration(getFile(JFiles.PAYMENTS.fileName))
-
     }
-
-    private fun getFile(jFiles: String): File {
-        val file = File(rxbPlugin.dataFolder.path, jFiles)
-        if (!file.exists()) {
-            rxbPlugin.saveResource(jFiles, false)
-        }
-        return file
-    }
-
-    fun reload(){
-        loadMessageConfig()
-    }
-
-
 }

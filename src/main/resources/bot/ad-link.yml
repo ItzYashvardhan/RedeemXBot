@@ -15,9 +15,9 @@ ad-link:
   # The name of the template is the key, and the chance is the value.
   # The total chance doesn't have to be 100, it's a weighted system.
   templates:
-    COMMON_REWARD: 80
-    RARE_REWARD: 20
-    EPIC_REWARD: 5
+    common-reward: 80
+    rare-reward: 20
+    epic-reward: 5
 
   # Cooldown for how often a user can generate a link.
   cooldown:

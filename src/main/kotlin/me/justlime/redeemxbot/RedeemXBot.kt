@@ -1,44 +1,48 @@
 package me.justlime.redeemxbot
 
+import me.justlime.redeemxbot.commands.GameCommandManager
 import me.justlime.redeemxbot.commands.configuration.ConfigManager
-import me.justlime.redeemxbot.linking.LinkCommand
 import me.justlime.redeemxbot.linking.LinkListener
 import me.justlime.redeemxbot.linking.LinkManager
-import me.justlime.redeemxbot.listener.CommandManager
+import me.justlime.redeemxbot.listener.DiscordCommandManager
 import me.justlime.redeemxbot.listener.GuildJoinListener
-import me.justlime.redeemxbot.utils.JServices
+import me.justlime.redeemxbot.utils.JService
 import net.dv8tion.jda.api.JDA
+import net.justlime.redeemcodex.RedeemX
 import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
 import java.time.Duration
 
-lateinit var rxbPlugin: RedeemXBot
-
 class RedeemXBot : JavaPlugin() {
     private lateinit var jda: JDA
-    private lateinit var linkManager: LinkManager
+
+    companion object{
+        lateinit var instance: RedeemXBot
+    }
 
     override fun onEnable() {
         Class.forName("org.slf4j.LoggerFactory")
 
-        setupConfig()
-        rxbPlugin = this
+        instance = this
 
-        JServices.configManager = ConfigManager()
+        JService.configManager = ConfigManager()
 
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) JServices.isPlaceholderHooked = true
+
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            JService.isPlaceholderHooked = true
+        }
 
         // Check if the bot is enabled
-        if (!config.getBoolean("bot.enabled")) {
+        if (!JService.config.getBoolean("bot.enabled")) {
             logger.warning("Bot is disabled in the config.yml. Disabling plugin.")
             return server.pluginManager.disablePlugin(this)
         }
 
         // Retrieve bot token and guilds
-        val token = config.getString("bot.token")?.takeIf { it.isNotEmpty() }
-        val guilds = config.getStringList("guilds").takeIf { it.isNotEmpty() }
-        val roles = config.getStringList("roles").takeIf { it.isNotEmpty() }
-        val channels = config.getStringList("channels").takeIf { it.isNotEmpty() }
+        val token = JService.config.getString("bot.token")?.takeIf { it.isNotEmpty() }
+        val guilds = JService.config.getStringList("guilds").takeIf { it.isNotEmpty() }
+        val roles = JService.config.getStringList("roles").takeIf { it.isNotEmpty() }
+        val channels = JService.config.getStringList("channels").takeIf { it.isNotEmpty() }
 
         if (token == null) {
             logger.severe("Bot token is missing in the config.yml. Disabling plugin.")
@@ -66,22 +70,16 @@ class RedeemXBot : JavaPlugin() {
             logger.info("Bot connected successfully.")
 
             // Initialize commands and register listeners
-            val commandManager = CommandManager(jda, guilds, roles, channels)
-            commandManager.initializeCommands()
+            val discordCommandManager = DiscordCommandManager(jda, guilds, roles, channels)
+            discordCommandManager.initializeCommands()
 
-            //Initialize Account Linking System
-            linkManager = LinkManager()
-            linkManager.loadLinks()
-            val linkCommandName = linkManager.config.getString("linking.command-name", "linkdiscord")!!
-            val linkCommandAliases = linkManager.config.getStringList("linking.command-aliases")
-            getCommand(linkCommandName)?.let {
-                it.setExecutor(LinkCommand(linkManager))
-                it.aliases = linkCommandAliases
-            }
+            JService.linkManager = LinkManager(RedeemX.accountLinkDao, RedeemX.notificationToggleDao)
+            JService.linkManager.loadCache()
+            GameCommandManager(this)
 
-            jda.addEventListener(commandManager)
+            jda.addEventListener(discordCommandManager)
             jda.addEventListener(GuildJoinListener(guilds))
-            jda.addEventListener(LinkListener(linkManager)) // Add the DM listener
+            jda.addEventListener(LinkListener(JService.linkManager)) // Add the DM listener
 
         } catch (exception: Exception) {
             logger.severe("Failed to initialize the Discord bot: ${exception.message}")
@@ -102,13 +100,6 @@ class RedeemXBot : JavaPlugin() {
             }
             logger.info("Bot has been shut down.")
         }
-    }
-
-    private fun setupConfig() {
-        if (!dataFolder.exists()) {
-            dataFolder.mkdirs()
-        }
-        saveDefaultConfig()
     }
 
     fun getJDA(): JDA = jda

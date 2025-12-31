@@ -1,0 +1,38 @@
+# This file contains the customizable names and descriptions for Discord commands.
+# It was renamed from messages.yml.
+
+# Admin Create Command (/rcx-create)
+create-command: "rcx-create"
+create-description: "Creates a new redeem code."
+create-digit-completion: "digits"
+create-digit-description: "The number of random digits for the code."
+create-custom-completion: "custom"
+create-custom-description: "A space-separated list of custom codes to add."
+create-amount-completion: "amount"
+create-amount-description: "The number of random codes to create."
+create-template-completion: "template"
+create-template-description: "The template to use for the created codes."
+
+# Admin Delete Command (/rcx-delete)
+delete-command: "rcx-delete"
+delete-description: "Deletes redeem codes or templates."
+delete-code-subcommand: "code"
+delete-code-description: "Delete one or more specific redeem codes."
+delete-code-completion: "codes"
+delete-code-option-description: "The code(s) to delete, separated by spaces."
+delete-template-subcommand: "template"
+delete-template-description: "Delete one or more code templates."
+delete-template-completion: "templates"
+delete-template-option-description: "The template(s) to delete, separated by spaces."
+
+# Admin Usage Command (/rcx-usage)
+usage-command: "rcx-usage"
+usage-description: "Check the usage and details of a code or template."
+usage-code-subcommand: "code"
+usage-code-description: "Get usage details for a specific code."
+usage-code-completion: "code"
+usage-code-option-description: "The code to check."
+usage-template-subcommand: "template"
+usage-template-description: "Get usage details for a specific template."
+usage-template-completion: "template"
+usage-template-option-description: "The template to check."

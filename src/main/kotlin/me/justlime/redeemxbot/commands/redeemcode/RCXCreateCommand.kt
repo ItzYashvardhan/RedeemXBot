@@ -1,10 +1,9 @@
 package me.justlime.redeemxbot.commands.redeemcode
 
-import api.justlime.redeemcodex.RedeemX
 import me.justlime.redeemxbot.adapter.DiscordRCXSender
-import me.justlime.redeemxbot.commands.JRedeemCode
+import me.justlime.redeemxbot.commands.DCommand
 import me.justlime.redeemxbot.enums.JMessages
-import me.justlime.redeemxbot.utils.JServices
+import me.justlime.redeemxbot.utils.JService
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.Command
@@ -13,8 +12,9 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
+import net.justlime.redeemcodex.RedeemX
 
-class RCXCreateCommand : JRedeemCode {
+class RCXCreateCommand : DCommand {
 
     companion object {
         private const val MAX_DIGITS: Long = 25
@@ -24,41 +24,41 @@ class RCXCreateCommand : JRedeemCode {
 
     override fun buildCommand(): CommandData {
         return Commands.slash(
-            JServices.getMessage(JMessages.GENERATE_COMMAND.path),
-            JServices.getMessage(JMessages.GENERATE_DESCRIPTION.path)
+            JService.getCommandString(JMessages.GENERATE_COMMAND.path),
+            JService.getCommandString(JMessages.GENERATE_DESCRIPTION.path)
         ).addOptions(
             OptionData(
                 OptionType.INTEGER,
-                JServices.getMessage(JMessages.GENERATE_DIGIT_COMPLETION.path),
-                JServices.getMessage(JMessages.GENERATE_DIGIT_DESCRIPTION.path),
+                JService.getCommandString(JMessages.GENERATE_DIGIT_COMPLETION.path),
+                JService.getCommandString(JMessages.GENERATE_DIGIT_DESCRIPTION.path),
                 false
             ).setMinValue(1).setMaxValue(MAX_DIGITS),
             OptionData(
                 OptionType.STRING,
-                JServices.getMessage(JMessages.GENERATE_CUSTOM_COMPLETION.path),
-                JServices.getMessage(JMessages.GENERATE_CUSTOM_DESCRIPTION.path),
+                JService.getCommandString(JMessages.GENERATE_CUSTOM_COMPLETION.path),
+                JService.getCommandString(JMessages.GENERATE_CUSTOM_DESCRIPTION.path),
                 false
             ),
             OptionData(
                 OptionType.INTEGER,
-                JServices.getMessage(JMessages.GENERATE_AMOUNT_COMPLETION.path),
-                JServices.getMessage(JMessages.GENERATE_AMOUNT_DESCRIPTION.path),
+                JService.getCommandString(JMessages.GENERATE_AMOUNT_COMPLETION.path),
+                JService.getCommandString(JMessages.GENERATE_AMOUNT_DESCRIPTION.path),
                 false
             ).setMinValue(1).setMaxValue(MAX_AMOUNT),
             OptionData(
                 OptionType.STRING,
-                JServices.getMessage(JMessages.GENERATE_TEMPLATE_COMPLETION.path),
-                JServices.getMessage(JMessages.GENERATE_TEMPLATE_DESCRIPTION.path),
+                JService.getCommandString(JMessages.GENERATE_TEMPLATE_COMPLETION.path),
+                JService.getCommandString(JMessages.GENERATE_TEMPLATE_DESCRIPTION.path),
                 false
             ).setAutoComplete(true)
         ).setDefaultPermissions(DefaultMemberPermissions.DISABLED)
     }
 
     override fun execute(event: SlashCommandInteractionEvent) {
-        val digit = event.getOption(JServices.getMessage(JMessages.GENERATE_DIGIT_COMPLETION.path))?.asInt
-        val customCodesRaw = event.getOption(JServices.getMessage(JMessages.GENERATE_CUSTOM_COMPLETION.path))?.asString
-        val amount = event.getOption(JServices.getMessage(JMessages.GENERATE_AMOUNT_COMPLETION.path))?.asInt ?: 1
-        val template = event.getOption(JServices.getMessage(JMessages.GENERATE_TEMPLATE_COMPLETION.path))?.asString ?: DEFAULT_TEMPLATE
+        val digit = event.getOption(JService.getCommandString(JMessages.GENERATE_DIGIT_COMPLETION.path))?.asInt
+        val customCodesRaw = event.getOption(JService.getCommandString(JMessages.GENERATE_CUSTOM_COMPLETION.path))?.asString
+        val amount = event.getOption(JService.getCommandString(JMessages.GENERATE_AMOUNT_COMPLETION.path))?.asInt ?: 1
+        val template = event.getOption(JService.getCommandString(JMessages.GENERATE_TEMPLATE_COMPLETION.path))?.asString ?: DEFAULT_TEMPLATE
 
         // 1. Defer Reply: Essential because database ops take time
         event.deferReply().queue()
@@ -94,7 +94,7 @@ class RCXCreateCommand : JRedeemCode {
     override fun handleAutoComplete(event: CommandAutoCompleteInteractionEvent): List<Command.Choice> {
         val focusedOption = event.focusedOption.name
         return when (focusedOption) {
-            JServices.getMessage(JMessages.GENERATE_TEMPLATE_COMPLETION.path) -> {
+            JService.getCommandString(JMessages.GENERATE_TEMPLATE_COMPLETION.path) -> {
                 RedeemX.redeemTemplateDao.getTemplates()
                     .take(25)
                     .map { Command.Choice(it, it) }
